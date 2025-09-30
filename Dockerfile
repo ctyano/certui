@@ -18,8 +18,6 @@ COPY . .
 RUN make \
     && mv "${GOPATH}/bin/${APP_NAME}" "/usr/bin/${APP_NAME}"
 
-RUN /usr/bin/${APP_NAME} version
-
 RUN apk del build-dependencies --purge \
     && rm -rf "${GOPATH}"
 
