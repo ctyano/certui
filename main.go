@@ -305,12 +305,9 @@ func handleMobileConfig(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Combine the user certificate and the CA chain
-	allCerts := []*x509.Certificate{cert}
-	allCerts = append(allCerts, caCerts...)
-
 	// Use the 5-argument signature: Encode(rand io.Reader, privateKey interface{}, certificates []*x509.Certificate, password string)
-	pfxBytes, err := pkcs12go.Encode(rand.Reader, priv, allCerts[0], nil, reqBody.Password)
+	encoder := &pkcs12go.Encoder{}
+	pfxBytes, err := encoder.Encode(priv, cert, caCerts, reqBody.Password)
 	if err != nil {
 		log.Printf("PKCS#12 encoding failed: %v", err)
 		http.Error(w, "Failed to generate PKCS#12 bundle", http.StatusInternalServerError)
