@@ -20,7 +20,7 @@ on:
 env:
   DOCKER_REGISTRY_URL: ghcr.io
   TARGET_TAG: ""
-  TRACKING_GIT_REPO: ctyano/athen_user_cert
+  TRACKING_GIT_REPO: ctyano/certui
 
 jobs:
   build:
