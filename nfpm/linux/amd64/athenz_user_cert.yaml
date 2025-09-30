@@ -1,0 +1,16 @@
+# https://nfpm.goreleaser.com/configuration/
+name: athenz_user_cert
+description: Package for Athenz User Cert CLI
+maintainer: ctyano <ctyano@duck.com>
+vendor: ctyano
+homepage: https://ctyano.com
+license: Private
+arch: amd64
+platform: linux
+version: ${SEMVER}
+version_schema: semver
+suggests:
+  - openssl
+contents:
+  - src: athenz_user_cert_amd64/usr/bin/athenz_user_cert
+    dst: /usr/local/bin/athenz_user_cert

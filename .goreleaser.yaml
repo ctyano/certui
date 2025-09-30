@@ -1,0 +1,37 @@
+---
+# https://github.com/goreleaser/goreleaser/blob/v1.13.1/www/docs/customization/build.md
+builds:
+  - id: "certui"
+    dir: .
+    main: ./cmd
+    binary: certui
+    ignore:
+      - goos: darwin
+        goarch: 386
+    # Custom ldflags.
+    # For more info refer to: https://pkg.go.dev/cmd/go#hdr-Compile_packages_and_dependencies
+    # and https://pkg.go.dev/cmd/link
+    #
+    # Default: '-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser'.
+    # Templates: allowed.
+    #ldflags:
+    #  - -s -w -X main.build={{.Version}}
+    ldflags:
+      - -s -w -X main.VERSION={{.Version}} -X main.BUILD_DATE={{.Date}} {{ .Env.EXT_LDFLAGS }}
+archives:
+  - id: homebrew
+    format: zip
+# https://github.com/goreleaser/goreleaser/blob/v1.13.1/www/docs/customization/homebrew.md
+# curl -sL https://git.io/goreleaser | VERSION=v1.13.1 GITHUB_TOKEN=<GITHUB_TOKEN> bash 
+brews:
+  - tap:
+      owner: ctyano
+      name: certui
+    folder: Formula
+    homepage: https://github.com/ctyano/certui
+    description: Web UI to retrieve Client Certificate
+    ids:
+      - homebrew
+    test: |
+      system "#{bin}/certui version"
+

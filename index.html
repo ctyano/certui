@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Cert Download</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 480px;
+            width: 95%;
+            padding: 2rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            background: white;
+            border-radius: 1rem;
+            text-align: center;
+        }
+        .status-message {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">Client Identity Provisioning</h1>
+
+        <!-- Login View (Default) -->
+        <div id="login-view">
+            <p class="text-gray-600 mb-6">You must log in to issue a client certificate for your device.</p>
+            <a href="/login" class="inline-block px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-150 transform hover:scale-105">
+                Start OIDC Login
+            </a>
+        </div>
+
+        <!-- Download View (Hidden until token is present) -->
+        <div id="download-view" class="hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Install Configuration Profile</h2>
+            <p class="text-gray-600 mb-4">
+                Enter a strong password to protect the identity bundle. This is required for installation on iOS.
+            </p>
+
+            <form id="download-form" action="/api/mobileconfig" method="POST" target="_self" class="space-y-4">
+                <input type="hidden" name="id_token" id="id_token_field">
+                
+                <div>
+                    <input 
+                        type="password" 
+                        name="password" 
+                        id="p12-password" 
+                        placeholder="Enter PKCS#12 Password" 
+                        required 
+                        minlength="8"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                </div>
+                
+                <button type="submit" class="w-full px-6 py-3 bg-green-600 text-white font-bold rounded-lg shadow-lg hover:bg-green-700 transition duration-150 transform hover:scale-105">
+                    Download MobileConfig (.mobileconfig)
+                </button>
+            </form>
+
+            <div id="status-message" class="status-message hidden bg-yellow-100 text-yellow-800 border border-yellow-300">
+                Awaiting Download...
+            </div>
+            <p class="text-sm text-gray-500 mt-4">
+                Note: Upon download, your iOS device will automatically open the Settings app to prompt installation.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const token = params.get('token');
+            const loginView = document.getElementById('login-view');
+            const downloadView = document.getElementById('download-view');
+            const idTokenField = document.getElementById('id_token_field');
+            const statusMessage = document.getElementById('status-message');
+            const downloadForm = document.getElementById('download-form');
+
+            if (token) {
+                // User has returned from OIDC login
+                loginView.classList.add('hidden');
+                downloadView.classList.remove('hidden');
+                idTokenField.value = token;
+                
+                // Clear the token from the URL for security/cleanliness
+                history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+
+                // Handle the form submission
+                downloadForm.addEventListener('submit', (event) => {
+                    // Prevent default fetch/AJAX flow; we want a direct form submission for file download
+                    // The 'action="/api/mobileconfig"' and 'method="POST"' handle the download.
+                    statusMessage.textContent = "Attempting to download and install profile...";
+                    statusMessage.classList.remove('hidden');
+
+                    // Note: We use a synchronous form submit (not fetch/AJAX) to initiate the file download
+                    // and allow the browser to handle the Content-Disposition header.
+                });
+
+            } else {
+                // User is starting the process
+                loginView.classList.remove('hidden');
+                downloadView.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
+

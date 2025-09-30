@@ -1,0 +1,144 @@
+name: Create Homebrew Releases with Packages
+
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+on:
+  # If any commit message in your push or the HEAD commit of your PR contains the strings
+  # [skip ci], [ci skip], [no ci], [skip actions], or [actions skip]
+  # workflows triggered on the push or pull_request events will be skipped.
+  # https://github.blog/changelog/2021-02-08-github-actions-skip-pull-request-and-push-workflows-with-skip-ci/
+  workflow_call:
+
+env:
+  # Use docker.io for Docker Hub if empty
+  DOCKER_REGISTRY_URL: ghcr.io
+  # DOCKER_REGISTRY_OWNER: ${{ env.CI_REPOSITORY_OWNER }}
+  # DOCKER_REGISTRY_IMAGE: ${{ env.CI_REPOSITORY_NAME }}
+  # DOCKER_REGISTRY_TOKEN: ${{ secrets.DOCKER_REGISTRY_TOKEN }}
+  DOCKER_TAEGET_PLATFORMS: linux/amd64,linux/arm64
+  # DOCKER_BUILD_ARGS: |
+  NFPM_SOURCE_IMAGES: certui
+  NFPM_TARGET_PACKAGER: apk,deb,rpm
+  NFPM_TARGET_COMPONENTS: certui
+  GITHUB_REPOSITORY: ctyano/certui
+  TARBALL_TAEGET_PLATFORMS: darwin/amd64,darwin/arm64
+  TRACKING_GIT_REPO: ctyano/athen_user_cert
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#permissions
+    permissions:
+      actions: none
+      checks: none
+      contents: write
+      deployments: none
+      issues: none
+      discussions: none
+      packages: none
+      pull-requests: none
+      repository-projects: none
+      security-events: none
+      statuses: none
+
+    steps:
+      # A GitHub Action to expose useful environment variables.
+      # https://github.com/FranzDiebold/github-env-vars-action
+      -
+        name: GitHub Environment Variables Action
+        id: env
+        # uses: https://github.com/FranzDiebold/github-env-vars-action/tags
+        uses: FranzDiebold/github-env-vars-action@v2
+
+      # A GitHub Action to prepare default environment variables.
+      -
+        name: Set Default Environment Variables
+        id: default_env
+        run: |
+          # Use docker.io for Docker Hub if empty
+          [[ "${{ env.DOCKER_REGISTRY_URL}}" = "" ]] && echo "DOCKER_REGISTRY_URL=docker.io" >> $GITHUB_ENV
+          [[ "${{ env.DOCKER_REGISTRY_OWNER }}" = "" ]] && echo "DOCKER_REGISTRY_OWNER=${{ env.CI_REPOSITORY_OWNER }}" >> $GITHUB_ENV
+          [[ "${{ env.DOCKER_REGISTRY_IMAGE }}" = "" ]] && echo "DOCKER_REGISTRY_IMAGE=${{ env.CI_REPOSITORY_NAME }}" >> $GITHUB_ENV
+          [[ "${{ secrets.DOCKER_REGISTRY_TOKEN }}" = "" ]] && echo "DOCKER_REGISTRY_URL=ghcr.io" >> $GITHUB_ENV
+          [[ "${{ secrets.DOCKER_REGISTRY_TOKEN }}" = "" ]] && echo "DOCKER_REGISTRY_OWNER=${{ env.CI_REPOSITORY_OWNER }}" >> $GITHUB_ENV
+          [[ "${{ secrets.DOCKER_REGISTRY_TOKEN }}" = "" ]] && echo "DOCKER_REGISTRY_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV || echo "DOCKER_REGISTRY_TOKEN=${{ secrets.DOCKER_REGISTRY_TOKEN }}" >> $GITHUB_ENV
+
+      # This action checks-out your repository under $GITHUB_WORKSPACE, so your workflow can access it.
+      # https://github.com/actions/checkout
+      -
+        name: Checkout repository
+        id: checkout
+        # You may pin to the exact commit or the version.
+        # uses: https://github.com/actions/checkout/tags
+        uses: actions/checkout@v4
+        with:
+          fetch-tags: true
+
+      # A GitHub Action to create git tags
+      #
+      # Using the GITHUB_TOKEN in a workflow
+      # https://docs.github.com/en/actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow
+      # When you use the repository's GITHUB_TOKEN to perform tasks, events triggered by the GITHUB_TOKEN, with the exception of workflow_dispatch and repository_dispatch, will not create a new workflow run.
+      # This prevents you from accidentally creating recursive workflow runs.
+      # For example, if a workflow run pushes code using the repository's GITHUB_TOKEN, a new workflow will not run even when the repository contains a workflow configured to run when push events occur.
+      -
+        name: Create git tag
+        id: tag
+        if: ${{ env.CURRENT_VERSION != '' && env.VERSION != '' && env.VERSION != env.CURRENT_VERSION }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -x
+          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          version=${latest_tag#v}
+          IFS='.' read -r major minor patch <<< "$version"
+          patch=$((patch + 1))
+          next_version=v$major.$minor.$patch
+          git tag -f $next_version
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}
+          git push -f origin tag $next_version
+
+      # This action sets up a go environment for use in actions by:
+      # - Optionally downloading and caching a version of Go by version and adding to PATH.
+      # - Registering problem matchers for error output.
+      # https://github.com/actions/setup-go
+      -
+        name: Setup Golang
+        id: setup-go
+        # You may pin to the exact commit or the version.
+        # uses: https://github.com/actions/setup-go/tags
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          check-latest: true
+
+      # A GitHub Action to set environment variables for Go
+      -
+        name: Set Golang env
+        id: go-env
+        run: |
+          go env | grep GOPATH | sed -e "s/'//g" >> $GITHUB_ENV
+          go mod download
+          go mod tidy
+          go mod verify
+
+      # GoReleaser Action runs goreleaser, please follow its docs for more information about how to customize what GoReleaser does.
+      # https://github.com/goreleaser/goreleaser-action
+      -
+        name: Release Homebrew Formula with Goreleaser
+        id: goreleaser
+        # You may pin to the exact commit or the version.
+        # uses: https://github.com/goreleaser/goreleaser-action/tags
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: v1.13.1
+          args: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: v1.13.1
+          EXT_LDFLAGS: ${{ secrets.EXT_LDFLAGS }}
+

@@ -1,0 +1,4 @@
+*.backup
+go.sum
+athenz_user_cert
+dist
