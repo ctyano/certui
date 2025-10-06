@@ -5,7 +5,7 @@ go 1.25.1
 require (
 	github.com/coreos/go-oidc/v3 v3.16.0
 	github.com/google/uuid v1.6.0
-	github.com/hashicorp/vault/api v1.21.0
+	github.com/hashicorp/vault/api v1.22.0
 	golang.org/x/oauth2 v0.32.0
 	software.sslmate.com/src/go-pkcs12 v0.6.0
 )
