@@ -3,7 +3,7 @@ module github.com/ctyano/certui
 go 1.25.1
 
 require (
-	github.com/coreos/go-oidc/v3 v3.15.0
+	github.com/coreos/go-oidc/v3 v3.16.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/vault/api v1.21.0
 	golang.org/x/oauth2 v0.31.0
@@ -12,7 +12,7 @@ require (
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
-	github.com/go-jose/go-jose/v4 v4.1.1 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
