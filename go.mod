@@ -1,12 +1,12 @@
 module github.com/ctyano/certui
 
-go 1.25.1
+go 1.26.0
 
 require (
 	github.com/coreos/go-oidc/v3 v3.21.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/vault/api v1.23.0
-	golang.org/x/oauth2 v0.36.0
+	golang.org/x/oauth2 v0.37.0
 	software.sslmate.com/src/go-pkcs12 v0.7.3
 )
 
